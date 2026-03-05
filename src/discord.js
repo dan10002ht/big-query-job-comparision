@@ -152,13 +152,14 @@ function buildTopPatternsEmbed(comparisons) {
     const queryLines = comp.originalQuery.trim().split('\n');
     const queryType = queryLines[0].split(/\s+/)[0].toUpperCase();
     
-    // Truncate full query to reasonable length
-    const queryDisplay = comp.originalQuery.substring(0, 150).replace(/\n/g, ' ').trim();
+    // Truncate full query - keep it SHORT for Discord
+    const queryDisplay = comp.originalQuery.substring(0, 100).replace(/\n/g, ' ').trim();
+    const queryPreview = queryDisplay.length > 90 ? queryDisplay.substring(0, 90) + '...' : queryDisplay;
 
     patternText += `\n**${idx + 1}. [${queryType}]** ${comp.changeScore > 50 ? '🔴' : comp.changeScore > 20 ? '🟠' : '🟢'}\n`;
     patternText += `${statusLine}\n`;
     patternText += `${gbLine}\n`;
-    patternText += `\`\`\`sql\n${queryDisplay}...\n\`\`\`\n`;
+    patternText += `\`${queryPreview}\`\n`;
   });
 
   return {
