@@ -53,7 +53,7 @@ function groupJobsByPattern(jobs) {
     ptn.totalBilledBytes += job.billedBytes;
     ptn.totalGBScanned += job.gbScanned;
     ptn.executionCount += 1;
-    ptn.totalDurationSec += job.durationSec;
+    ptn.totalDurationSec += (job.durationSec || 0);
     ptn.users.add(job.userEmail);
     ptn.statementTypes.add(job.statementType);
     ptn.jobIds.push(job.jobId);

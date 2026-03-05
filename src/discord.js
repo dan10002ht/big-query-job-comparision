@@ -120,40 +120,55 @@ function buildDailySummaryEmbed(report) {
  * @returns {Object}
  */
 function buildTopPatternsEmbed(comparisons) {
-  const topPatterns = comparisons.slice(0, 5);
+  // Remove duplicate patterns (same normalized query)
+  const uniquePatterns = [];
+  const seenPatterns = new Set();
+  
+  for (const comp of comparisons) {
+    if (!seenPatterns.has(comp.pattern)) {
+      uniquePatterns.push(comp);
+      seenPatterns.add(comp.pattern);
+      if (uniquePatterns.length >= 5) break;
+    }
+  }
 
   let patternText = '';
-  topPatterns.forEach((comp, idx) => {
+  uniquePatterns.forEach((comp, idx) => {
     const execIcon = comp.executionChange > 0 ? '📈' : (comp.executionChange < 0 ? '📉' : '➡️');
     const gbIcon = comp.gbChange > 0 ? '📈' : (comp.gbChange < 0 ? '📉' : '➡️');
 
     let statusLine = '';
     if (comp.isNew) {
-      statusLine = `${comp.status} **NEW PATTERN**\n`;
+      statusLine = `${comp.status} **NEW PATTERN**`;
     } else {
-      statusLine = `${comp.status} Executions: ${comp.yesterdayExecutions} → ${comp.todayExecutions} (${execIcon} ${comp.executionChangePercent > 0 ? '+' : ''}${comp.executionChangePercent}%)\n`;
+      statusLine = `${comp.status} Executions: ${comp.yesterdayExecutions} → ${comp.todayExecutions} ${comp.executionChangePercent !== 0 ? `(${execIcon} ${comp.executionChangePercent > 0 ? '+' : ''}${comp.executionChangePercent}%)` : '(no change)'}`;
     }
 
     const gbLine = comp.isNew 
-      ? `GB Scanned: ${comp.todayGB} GB (NEW)\n`
-      : `GB Scanned: ${comp.yesterdayGB} → ${comp.todayGB} GB (${gbIcon} ${comp.gbChangePercent > 0 ? '+' : ''}${comp.gbChangePercent}%)\n`;
+      ? `📊 GB: ${comp.todayGB} GB (NEW)`
+      : `📊 GB: ${comp.yesterdayGB} → ${comp.todayGB} GB ${comp.gbChangePercent !== 0 ? `(${gbIcon} ${comp.gbChangePercent > 0 ? '+' : ''}${comp.gbChangePercent}%)` : '(no change)'}`;
 
-    const querySnippet = comp.originalQuery.substring(0, 80).replace(/\n/g, ' ');
+    // Get query type (first word)
+    const queryLines = comp.originalQuery.trim().split('\n');
+    const queryType = queryLines[0].split(/\s+/)[0].toUpperCase();
+    
+    // Truncate full query to reasonable length
+    const queryDisplay = comp.originalQuery.substring(0, 150).replace(/\n/g, ' ').trim();
 
-    patternText += `\n**${idx + 1}. ${comp.originalQuery.split(' ')[0] || 'QUERY'} ...**\n`;
-    patternText += statusLine;
-    patternText += gbLine;
-    patternText += `\`${querySnippet}...\`\n`;
+    patternText += `\n**${idx + 1}. [${queryType}]** ${comp.changeScore > 50 ? '🔴' : comp.changeScore > 20 ? '🟠' : '🟢'}\n`;
+    patternText += `${statusLine}\n`;
+    patternText += `${gbLine}\n`;
+    patternText += `\`\`\`sql\n${queryDisplay}...\n\`\`\`\n`;
   });
 
   return {
     title: '📈 Top 5 Pattern Changes',
-    description: 'Ranked by largest spike/change',
+    description: `${uniquePatterns.length} unique patterns analyzed. Ranked by largest change.`,
     color: 9442302, // Purple
     fields: [
       {
         name: 'Pattern Analysis',
-        value: patternText || 'No pattern changes detected',
+        value: patternText || '✅ No pattern changes detected',
         inline: false
       }
     ]
@@ -166,29 +181,43 @@ function buildTopPatternsEmbed(comparisons) {
  * @returns {Object}
  */
 function buildAnomaliesEmbed(anomalies) {
+  // Remove duplicates
+  const uniqueAnomalies = [];
+  const seenPatterns = new Set();
+  
+  for (const anom of anomalies) {
+    if (!seenPatterns.has(anom.pattern)) {
+      uniqueAnomalies.push(anom);
+      seenPatterns.add(anom.pattern);
+      if (uniqueAnomalies.length >= 3) break;
+    }
+  }
+
   let anomalyText = '';
 
-  anomalies.slice(0, 3).forEach((anom, idx) => {
-    const icon = Math.abs(anom.changeScore) >= 50 ? '🚨' : '⚠️';
-    anomalyText += `${icon} **${anom.status} Significant change detected**\n`;
-    anomalyText += `   Score: ${anom.changeScore.toFixed(1)}%\n`;
+  uniqueAnomalies.forEach((anom, idx) => {
+    const severity = anom.changeScore >= 50 ? '🚨 CRITICAL' : anom.changeScore >= 20 ? '⚠️ WARNING' : '📌 NOTICE';
+    
+    let details = '';
     if (anom.isNew) {
-      anomalyText += `   Status: New pattern (+${anom.todayExecutions} executions)\n`;
+      details = `New pattern: ${anom.todayExecutions} executions, ${anom.todayGB} GB`;
     } else {
-      anomalyText += `   Queries: ${anom.executionChangePercent > 0 ? '+' : ''}${anom.executionChangePercent}%\n`;
-      anomalyText += `   GB: ${anom.gbChangePercent > 0 ? '+' : ''}${anom.gbChangePercent}%\n`;
+      const execChangeDir = anom.executionChange > 0 ? '↑' : '↓';
+      const gbChangeDir = anom.gbChange > 0 ? '↑' : '↓';
+      details = `Executions: ${execChangeDir} ${Math.abs(anom.executionChangePercent)}% | GB: ${gbChangeDir} ${Math.abs(anom.gbChangePercent)}%`;
     }
-    anomalyText += '\n';
+
+    anomalyText += `**${idx + 1}. ${severity}** (Score: ${anom.changeScore.toFixed(1)}%)\n${details}\n\n`;
   });
 
   return {
     title: '🚨 Anomalies Detected',
-    description: 'Patterns with significant changes',
+    description: `${uniqueAnomalies.length} significant pattern changes found`,
     color: 16711680, // Red
     fields: [
       {
         name: 'Alerts',
-        value: anomalyText || 'No anomalies',
+        value: anomalyText || '✅ No anomalies detected',
         inline: false
       }
     ]
