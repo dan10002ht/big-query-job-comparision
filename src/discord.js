@@ -120,14 +120,19 @@ function buildDailySummaryEmbed(report) {
  * @returns {Object}
  */
 function buildTopPatternsEmbed(comparisons) {
-  // Remove duplicate patterns (same normalized query)
+  // Remove duplicate patterns (by combination of type + key characteristics)
   const uniquePatterns = [];
-  const seenPatterns = new Set();
+  const seenKeys = new Set();
   
   for (const comp of comparisons) {
-    if (!seenPatterns.has(comp.pattern)) {
+    // Create unique key from query type and first substantial part
+    const queryType = comp.originalQuery.trim().split(/\s+/)[0].toUpperCase();
+    const querySubstance = comp.originalQuery.substring(0, 80);
+    const uniqueKey = `${queryType}::${querySubstance}`;
+    
+    if (!seenKeys.has(uniqueKey)) {
       uniquePatterns.push(comp);
-      seenPatterns.add(comp.pattern);
+      seenKeys.add(uniqueKey);
       if (uniquePatterns.length >= 5) break;
     }
   }
@@ -152,14 +157,14 @@ function buildTopPatternsEmbed(comparisons) {
     const queryLines = comp.originalQuery.trim().split('\n');
     const queryType = queryLines[0].split(/\s+/)[0].toUpperCase();
     
-    // Truncate full query - keep it SHORT for Discord
-    const queryDisplay = comp.originalQuery.substring(0, 100).replace(/\n/g, ' ').trim();
-    const queryPreview = queryDisplay.length > 90 ? queryDisplay.substring(0, 90) + '...' : queryDisplay;
+    // Show more of query for clarity
+    const queryDisplay = comp.originalQuery.replace(/\n/g, ' ').replace(/\s+/g, ' ').trim();
+    const queryPreview = queryDisplay.length > 180 ? queryDisplay.substring(0, 180) + '...' : queryDisplay;
 
     patternText += `\n**${idx + 1}. [${queryType}]** ${comp.changeScore > 50 ? '🔴' : comp.changeScore > 20 ? '🟠' : '🟢'}\n`;
     patternText += `${statusLine}\n`;
     patternText += `${gbLine}\n`;
-    patternText += `\`${queryPreview}\`\n`;
+    patternText += `\n\`\`\`\n${queryPreview}\n\`\`\`\n`;
   });
 
   return {
@@ -182,14 +187,18 @@ function buildTopPatternsEmbed(comparisons) {
  * @returns {Object}
  */
 function buildAnomaliesEmbed(anomalies) {
-  // Remove duplicates
+  // Remove duplicates by unique key
   const uniqueAnomalies = [];
-  const seenPatterns = new Set();
+  const seenKeys = new Set();
   
   for (const anom of anomalies) {
-    if (!seenPatterns.has(anom.pattern)) {
+    const queryType = anom.originalQuery.trim().split(/\s+/)[0].toUpperCase();
+    const querySubstance = anom.originalQuery.substring(0, 80);
+    const uniqueKey = `${queryType}::${querySubstance}`;
+    
+    if (!seenKeys.has(uniqueKey)) {
       uniqueAnomalies.push(anom);
-      seenPatterns.add(anom.pattern);
+      seenKeys.add(uniqueKey);
       if (uniqueAnomalies.length >= 3) break;
     }
   }
