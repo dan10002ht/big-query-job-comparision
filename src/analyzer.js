@@ -107,11 +107,15 @@ function calculateDailyStats(jobs) {
   const totalQueries = jobs.length;
   const avgBytesPerQuery = Math.round(totalBytes / totalQueries);
   const avgGBPerQuery = (avgBytesPerQuery / 1e9).toFixed(4);
+  
+  // Calculate estimated cost: $6.25 per TB scanned
+  const estimatedCost = (parseFloat(totalGB) / 1024 * 6.25).toFixed(2);
 
   return {
     totalQueries,
     totalBytes,
     totalGB: parseFloat(totalGB),
+    estimatedCost: parseFloat(estimatedCost),
     avgBytesPerQuery,
     avgGBPerQuery: parseFloat(avgGBPerQuery),
     uniqueUsers: new Set(jobs.map(j => j.userEmail)).size,

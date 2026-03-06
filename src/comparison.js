@@ -117,6 +117,11 @@ function compareDailyStats(todayStats, yesterdayStats) {
     ? Math.round((gbChange / yesterdayStats.totalGB) * 100 * 100) / 100
     : (gbChange > 0 ? 100 : 0);
 
+  const costChange = todayStats.estimatedCost - yesterdayStats.estimatedCost;
+  const costChangePercent = yesterdayStats.estimatedCost > 0
+    ? Math.round((costChange / yesterdayStats.estimatedCost) * 100 * 100) / 100
+    : (costChange > 0 ? 100 : 0);
+
   return {
     yesterdayQueries: yesterdayStats.totalQueries,
     todayQueries: todayStats.totalQueries,
@@ -127,6 +132,11 @@ function compareDailyStats(todayStats, yesterdayStats) {
     todayGB: todayStats.totalGB,
     gbChange: gbChange,
     gbChangePercent: gbChangePercent,
+    
+    yesterdayEstimatedCost: yesterdayStats.estimatedCost,
+    todayEstimatedCost: todayStats.estimatedCost,
+    estimatedCostChange: costChange,
+    estimatedCostChangePercent: costChangePercent,
     
     yesterdayAvgGB: parseFloat(yesterdayStats.avgGBPerQuery),
     todayAvgGB: todayStats.avgGBPerQuery,

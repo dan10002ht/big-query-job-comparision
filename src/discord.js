@@ -76,6 +76,7 @@ function buildDailySummaryEmbed(report) {
 
   const queryChange = stats.queryChangePercent >= 0 ? '📈' : '📉';
   const gbChange = stats.gbChangePercent >= 0 ? '📈' : '📉';
+  const costChange = stats.estimatedCostChangePercent >= 0 ? '📈' : '📉';
 
   return {
     title: '📊 BigQuery Job Analysis Report',
@@ -84,12 +85,12 @@ function buildDailySummaryEmbed(report) {
     fields: [
       {
         name: '📅 Yesterday',
-        value: `${stats.yesterdayQueries} queries • ${stats.yesterdayGB} GB`,
+        value: `Queries: ${stats.yesterdayQueries}\nGB: ${stats.yesterdayGB}\nCost: $${stats.yesterdayEstimatedCost}`,
         inline: true
       },
       {
         name: '📅 Today',
-        value: `${stats.todayQueries} queries • ${stats.todayGB} GB`,
+        value: `Queries: ${stats.todayQueries}\nGB: ${stats.todayGB}\nCost: $${stats.todayEstimatedCost}`,
         inline: true
       },
       {
@@ -105,6 +106,11 @@ function buildDailySummaryEmbed(report) {
       {
         name: `${gbChange} GB Change`,
         value: `${stats.gbChange > 0 ? '+' : ''}${stats.gbChange.toFixed(2)} GB (${stats.gbChangePercent > 0 ? '+' : ''}${stats.gbChangePercent}%)`,
+        inline: true
+      },
+      {
+        name: `${costChange} Cost Change`,
+        value: `${stats.estimatedCostChange > 0 ? '+' : ''}$${stats.estimatedCostChange.toFixed(2)} (${stats.estimatedCostChangePercent > 0 ? '+' : ''}${stats.estimatedCostChangePercent}%)`,
         inline: true
       }
     ],
